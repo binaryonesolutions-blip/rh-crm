@@ -18,11 +18,11 @@ export default function PDFDownloadButton({ quote, fileName }: Props) {
       document={<PDFDocument quote={quote} />}
       fileName={fileName}
     >
-      {({ loading }) => (
+      {(({ loading }: { loading: boolean }) => (
         <button className="btn" disabled={loading}>
           {loading ? 'Preparing PDF…' : '↓ Download Quote PDF'}
         </button>
-      )}
+      )) as any}
     </PDFDownloadLink>
   )
 }
