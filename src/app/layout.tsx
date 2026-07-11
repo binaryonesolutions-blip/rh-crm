@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { DM_Sans } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
+import Link from 'next/link'
 import './globals.css'
 
 const dmSans = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
@@ -16,23 +17,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${dmSans.className} bg-gray-50 text-gray-900 antialiased`}>
         <nav className="h-16 bg-white border-b border-gray-200 flex items-center px-6 gap-6 sticky top-0 z-40 shadow-sm">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-3 shrink-0">
+          <Link href="/" className="flex items-center gap-3 shrink-0">
             <img
               src="https://rhombusconcrete.com/wp-content/uploads/2020/11/Logo-Rhombus-Concrete-1.png"
               alt="Rhombus Concrete"
               className="h-9 w-auto object-contain"
             />
-          </a>
+          </Link>
 
           {/* Divider */}
           <span className="h-6 w-px bg-gray-200" />
 
           {/* Nav links */}
-          <nav className="flex gap-1">
-            <a href="/"            className="nav-link">Quotes</a>
-            <a href="/price-list"  className="nav-link">Price list</a>
-            <a href="/settings"    className="nav-link">Settings</a>
-          </nav>
+          <div className="flex gap-1">
+            <Link href="/"           className="nav-link">Quotes</Link>
+            <Link href="/price-list" className="nav-link">Price list</Link>
+            <Link href="/settings"   className="nav-link">Settings</Link>
+          </div>
 
           {/* Spacer */}
           <div className="flex-1" />

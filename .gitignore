@@ -1,9 +1,65 @@
-.env.local
-.env*.local
+# ===========================
+# Dependencies
+# ===========================
 node_modules/
+.pnp
+.pnp.js
+
+# ===========================
+# Environment / Secrets
+# ===========================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env*.local
+
+# ===========================
+# Next.js
+# ===========================
 .next/
 out/
+next-env.d.ts
+
+# ===========================
+# Build outputs
+# ===========================
 dist/
-*.log
-.DS_Store
+build/
+
+# ===========================
+# Vercel
+# ===========================
 .vercel
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+
+# ===========================
+# Logs
+# ===========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===========================
+# OS / Editor
+# ===========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ===========================
+# Supabase local dev
+# ===========================
+supabase/.branches/
+supabase/.temp/

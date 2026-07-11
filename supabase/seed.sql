@@ -1,53 +1,48 @@
 -- ============================================================
--- Rhombus Concrete — Seed Data
--- Run AFTER schema.sql
+-- Rhombus Concrete — Seed Data (run AFTER schema.sql)
 -- ============================================================
 
--- ──────────────────────────────────────────────────────────────
--- STAFF — Sales team from the Odoo setup guide
--- Add remaining 13 FSO names as supplied by management
--- ──────────────────────────────────────────────────────────────
+-- STAFF
 INSERT INTO staff (name, role) VALUES
   ('Martin Miriti',    'sales_manager'),
   ('Faith Kamau',      'sales_admin'),
   ('Eugene Hilary',    'it_admin'),
-  ('Pauline Wanjiru',  'fso'),
-  ('Peterson Miano',   'fso');
--- TODO: add remaining 13 FSOs here
+  ('Pauline Wanjiru',  'kam'),
+  ('Peterson Miano',   'kam');
 
--- ──────────────────────────────────────────────────────────────
--- PRICE LIST — 48 combinations (Grade × Distance × Pump)
--- Prices are PLACEHOLDERS — Sales Admin must update before go-live
--- Structure mirrors Odoo Section 9 Option A
--- ──────────────────────────────────────────────────────────────
-INSERT INTO price_list (grade, distance_band, pump_required, unit_price_kes) VALUES
--- C15
-('C15','0-10km',  false,  8400), ('C15','0-10km',  true,   9500),
-('C15','10-25km', false,  8900), ('C15','10-25km', true,  10000),
-('C15','25-50km', false,  9400), ('C15','25-50km', true,  10500),
-('C15','50+km',   false,  9900), ('C15','50+km',   true,  11000),
--- C20
-('C20','0-10km',  false,  9300), ('C20','0-10km',  true,  10400),
-('C20','10-25km', false,  9800), ('C20','10-25km', true,  10900),
-('C20','25-50km', false, 10300), ('C20','25-50km', true,  11400),
-('C20','50+km',   false, 10800), ('C20','50+km',   true,  11900),
--- C25
-('C25','0-10km',  false,  9800), ('C25','0-10km',  true,  10900),
-('C25','10-25km', false, 10300), ('C25','10-25km', true,  11400),
-('C25','25-50km', false, 10800), ('C25','25-50km', true,  11900),
-('C25','50+km',   false, 11300), ('C25','50+km',   true,  12400),
--- C30
-('C30','0-10km',  false, 10800), ('C30','0-10km',  true,  11900),
-('C30','10-25km', false, 11300), ('C30','10-25km', true,  12400),
-('C30','25-50km', false, 11800), ('C30','25-50km', true,  12900),
-('C30','50+km',   false, 12300), ('C30','50+km',   true,  13400),
--- C35
-('C35','0-10km',  false, 11800), ('C35','0-10km',  true,  12900),
-('C35','10-25km', false, 12300), ('C35','10-25km', true,  13400),
-('C35','25-50km', false, 12800), ('C35','25-50km', true,  13900),
-('C35','50+km',   false, 13300), ('C35','50+km',   true,  14400),
--- C40
-('C40','0-10km',  false, 13400), ('C40','0-10km',  true,  14500),
-('C40','10-25km', false, 13900), ('C40','10-25km', true,  15000),
-('C40','25-50km', false, 14400), ('C40','25-50km', true,  15500),
-('C40','50+km',   false, 14900), ('C40','50+km',   true,  16000);
+-- CONCRETE PRICES (update to current before go-live)
+INSERT INTO price_list (grade, unit_price_kes) VALUES
+  ('C15',  8300),
+  ('C20',  9300),
+  ('C25', 10400),
+  ('C30', 11000),
+  ('C35', 13000),
+  ('C40', 13500);
+
+-- PRICING CONFIG — Herman's transport formula + pump constants
+INSERT INTO pricing_config (key, value, label) VALUES
+  -- Transport pricing constants
+  ('fuel_price_per_litre', 232,    'Fuel price per litre (KSH) — update when fuel price changes'),
+  ('km_per_litre',         1.3,    'Truck fuel efficiency (km per litre)'),
+  ('fuel_divisor',         6,      'Fuel calculation divisor (internal constant — do not change unless advised)'),
+  ('truck_fixed_per_trip', 11618,  'Daily truck fixed cost KSH (depreciation + insurance + R&M + driver + tyres)'),
+  ('m3_per_load',          7,      'Cubic metres per load'),
+  -- Pump
+  ('pump_rate_per_m3',     650,    'Pump charge per m³ (KSH)'),
+  ('mob_0_10',             50000,  'Pump mob fee — 0 to 10 m³'),
+  ('mob_11_20',            40000,  'Pump mob fee — 11 to 20 m³'),
+  ('mob_21_30',            30000,  'Pump mob fee — 21 to 30 m³'),
+  ('mob_31_40',            25000,  'Pump mob fee — 31 to 40 m³'),
+  ('mob_41_49',            20000,  'Pump mob fee — 41 to 49 m³');
+
+-- BANK ACCOUNTS
+INSERT INTO bank_accounts (name, account_name, account_number, paybill, bank, branch, swift_code, is_default) VALUES
+  ('SBM Bank', 'Rhombus Concrete Ltd', '0692386490001', '552800', 'SBM Bank', 'Lenana Road', 'SBMKKENA', true),
+  ('NCBA',     'Rhombus Concrete Ltd', '',              '',       'NCBA Bank', '',           '',         false),
+  ('Petty Cash', null,                  null,            null,     null,        null,          null,       false);
+
+-- COMPANY CONFIG
+INSERT INTO company_config (key, value) VALUES
+  ('phone',   '+254-702-700-700 / +254-705-900-000'),
+  ('address', 'Rhombus HQ, Tara Road off Kiambu Road, Nairobi'),
+  ('email',   'info@rhombusconcrete.com');

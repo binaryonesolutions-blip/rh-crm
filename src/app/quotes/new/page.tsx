@@ -6,7 +6,6 @@ import { fetchStaff, fetchPriceList, createQuote } from '@/lib/supabase'
 import QuoteEditor from '@/components/QuoteEditor'
 import type { Staff, PriceListEntry, QuoteForm, Quote } from '@/types'
 
-// Empty quote shell — the DB will fill in pi_number on INSERT
 const EMPTY_QUOTE: Quote = {
   id:                   '',
   pi_number:            'Auto-assigned on save',
@@ -25,6 +24,8 @@ const EMPTY_QUOTE: Quote = {
   subtotal:             0,
   total_vat:            0,
   grand_total:          0,
+  vat_rate:             0.16,
+  bank_account_id:      null,
   notes:                null,
   created_at:           new Date().toISOString(),
   updated_at:           new Date().toISOString(),
