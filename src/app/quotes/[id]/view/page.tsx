@@ -35,15 +35,13 @@ export default async function PublicQuoteView({ params }: Props) {
 
         {/* Header */}
         <div className="bg-white rounded-xl border border-gray-200 p-8 mb-6">
-          <div className="flex justify-between items-start mb-6 pb-6 border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 pb-6 border-b border-gray-100">
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-9 h-9 rounded-lg bg-blue-700 flex items-center justify-center text-sm font-bold text-white">RC</div>
-                <span className="text-lg font-bold text-gray-900">Rhombus Concrete Ltd</span>
-              </div>
-              <p className="text-sm text-gray-400 mt-1">info@rhombusconcrete.com</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.jpg" alt="Rhombus Concrete Ltd" className="h-12 w-auto rounded-md object-contain" />
+              <p className="text-sm text-gray-400 mt-2">sales@rhombusconcrete.com</p>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{docTitle}</p>
               <p className="text-xl font-bold text-blue-700 mt-1">{quote.pi_number}</p>
               <span className={`inline-flex mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium
@@ -56,7 +54,7 @@ export default async function PublicQuoteView({ params }: Props) {
           </div>
 
           {/* Meta */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             {[
               ['Date',      new Date(quote.quote_date).toLocaleDateString('en-KE', { day:'2-digit', month:'long', year:'numeric' })],
               ['ATTN',      quote.client_name],
@@ -77,7 +75,8 @@ export default async function PublicQuoteView({ params }: Props) {
 
         {/* Line items */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr className="bg-blue-700 text-white">
                 <th className="px-4 py-3 text-right text-xs font-semibold w-14">QTY</th>
@@ -105,6 +104,7 @@ export default async function PublicQuoteView({ params }: Props) {
               })}
             </tbody>
           </table>
+          </div>
 
           {/* Totals */}
           <div className="flex justify-end p-6 border-t border-gray-200 bg-gray-50">
@@ -123,7 +123,7 @@ export default async function PublicQuoteView({ params }: Props) {
         </div>
 
         {/* Notes + Bank details */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Terms</h3>
             <p className="text-sm text-red-600 font-semibold leading-relaxed">

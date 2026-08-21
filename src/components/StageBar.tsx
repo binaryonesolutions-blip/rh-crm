@@ -13,7 +13,7 @@ export default function StageBar({ current, onChange, disabled }: StageBarProps)
   const currentIdx = STATUS_FLOW.indexOf(current)
 
   return (
-    <div className="flex items-stretch bg-white border border-gray-200 rounded-lg overflow-hidden text-sm">
+    <div className="flex items-stretch bg-white border border-gray-200 rounded-lg overflow-x-auto text-sm">
       {STATUS_FLOW.map((status, i) => {
         const done   = i < currentIdx
         const active = i === currentIdx
@@ -24,7 +24,7 @@ export default function StageBar({ current, onChange, disabled }: StageBarProps)
             disabled={disabled}
             onClick={() => !disabled && onChange(status)}
             className={`
-              flex items-center gap-2 px-5 py-2.5 font-medium transition-colors
+              flex items-center gap-2 px-5 py-2.5 font-medium transition-colors whitespace-nowrap shrink-0
               ${active  ? 'bg-rhombus-blue text-white' : ''}
               ${done    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : ''}
               ${!active && !done ? 'text-gray-400 hover:bg-gray-50' : ''}

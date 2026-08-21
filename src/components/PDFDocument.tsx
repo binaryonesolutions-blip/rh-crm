@@ -75,7 +75,7 @@ export default function PDFDocument({ quote }: Props) {
             <Image src={logoSrc} style={s.logo} />
             <Text style={[s.contact, { marginTop: 6 }]}>Rhombus HQ, Tara Road off Kiambu Road, Nairobi</Text>
             <Text style={s.contact}>{(quote as any).company_phone || '+254-702-700-700 / +254-705-900-000'}</Text>
-            <Text style={s.contact}>info@rhombusconcrete.com</Text>
+            <Text style={s.contact}>sales@rhombusconcrete.com</Text>
           </View>
           <View>
             <Text style={s.docTitle}>{docTitle}</Text>
