@@ -4,7 +4,7 @@
 
 import { fetchQuote } from '@/lib/supabase'
 import { formatNum, formatKES, calcLineTotal } from '@/lib/calculations'
-import { STATUS_LABELS } from '@/types'
+import { STATUS_LABELS, DEFAULT_TERMS } from '@/types'
 import type { QuoteStatus, VatRate, BankAccount } from '@/types'
 
 interface Props { params: { id: string } }
@@ -28,6 +28,7 @@ export default async function PublicQuoteView({ params }: Props) {
   const vatPct  = Math.round(vatRate * 100)
   const bank    = (quote as any).bank_account as BankAccount | null | undefined
   const docTitle = quote.status === 'invoiced' ? 'Invoice' : 'Quotation'
+  const termsText = quote.notes && quote.notes.trim() ? quote.notes : DEFAULT_TERMS
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -125,16 +126,8 @@ export default async function PublicQuoteView({ params }: Props) {
         {/* Notes + Bank details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Terms</h3>
-            <p className="text-sm text-red-600 font-semibold leading-relaxed">
-              NB: THE PAYMENT TERMS ARE 100% UPFRONT BEFORE DELIVERY.
-            </p>
-            <p className="text-sm text-red-600 font-semibold mt-2 leading-relaxed">
-              NB: PLEASE NOTE THAT VOLUMES BELOW 50M³ ATTRACT A MOBILIZATION FEE BETWEEN 25,000–70,000 KSH.
-            </p>
-            {quote.notes && (
-              <p className="text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">{quote.notes}</p>
-            )}
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Terms &amp; notes</h3>
+            <p className="text-sm text-red-600 font-semibold leading-relaxed whitespace-pre-line">{termsText}</p>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-6">

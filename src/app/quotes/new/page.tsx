@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchStaff, fetchPriceList, createQuote } from '@/lib/supabase'
 import QuoteEditor from '@/components/QuoteEditor'
+import { DEFAULT_TERMS } from '@/types'
 import type { Staff, PriceListEntry, QuoteForm, Quote } from '@/types'
 
 const EMPTY_QUOTE: Quote = {
@@ -26,7 +27,7 @@ const EMPTY_QUOTE: Quote = {
   grand_total:          0,
   vat_rate:             0.16,
   bank_account_id:      null,
-  notes:                null,
+  notes:                DEFAULT_TERMS,
   created_at:           new Date().toISOString(),
   updated_at:           new Date().toISOString(),
   line_items:           [],

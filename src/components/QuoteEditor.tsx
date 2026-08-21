@@ -289,12 +289,13 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
       {/* Notes + Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div className="card">
-          <h2 className="section-title">Notes</h2>
+          <h2 className="section-title">Terms &amp; notes</h2>
+          <p className="text-xs text-gray-400 mb-2">Prints on the quote / invoice. Edit freely per quote.</p>
           <textarea
-            rows={4}
+            rows={6}
             value={form.notes}
             disabled={isLocked}
-            placeholder="Additional notes…"
+            placeholder="Terms and notes shown on the quote…"
             onChange={e => setField('notes', e.target.value)}
             className="resize-none"
           />

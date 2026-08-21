@@ -1,6 +1,7 @@
 // Rhombus Concrete — PDF Document (client-side only, ssr: false)
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
 import type { Quote, BankAccount } from '@/types'
+import { DEFAULT_TERMS } from '@/types'
 import { formatNum, formatKES } from '@/lib/calculations'
 
 const BLUE       = '#185FA5'
@@ -158,12 +159,11 @@ export default function PDFDocument({ quote }: Props) {
           </View>
         </View>
 
-        {/* NB notes */}
+        {/* Terms & notes (editable per quote, falls back to the standard terms) */}
         <View style={s.nbWrap}>
-          <Text><Text style={s.bold}>NB: THE PAYMENT TERMS ARE 100% UPFRONT BEFORE DELIVERY.</Text></Text>
-          {'\n'}
-          <Text><Text style={s.bold}>NB: PLEASE NOTE THAT VOLUMES BELOW 50M³ ATTRACT A MOBILIZATION FEE BETWEEN 25,000–70,000 KSH.</Text></Text>
-          {(quote as any).notes ? <Text style={{ marginTop: 4, color: '#555' }}>{(quote as any).notes}</Text> : null}
+          <Text style={s.bold}>
+            {(quote as any).notes && (quote as any).notes.trim() ? (quote as any).notes : DEFAULT_TERMS}
+          </Text>
         </View>
 
         {/* Bank details */}

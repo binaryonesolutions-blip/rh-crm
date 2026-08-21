@@ -190,6 +190,11 @@ export const GRADE_OPTIONS: Grade[] = ['C15','C20','C25','C30','C35','C40']
 export const STATUS_FLOW: QuoteStatus[] = ['draft', 'sent', 'confirmed', 'invoiced']
 export const LOCKED_STATUSES: QuoteStatus[] = ['confirmed', 'invoiced']
 
+// Standard terms pre-filled into a new quote's notes; editable per quote.
+// Shown on the invoice view and PDF (falls back to this when a quote has no notes).
+export const DEFAULT_TERMS = `NB: THE PAYMENT TERMS ARE 100% UPFRONT BEFORE DELIVERY.
+NB: PLEASE NOTE THAT VOLUMES BELOW 50M³ ATTRACT A MOBILIZATION FEE BETWEEN 25,000–70,000 KSH.`
+
 export const VAT_RATE_OPTIONS: { label: string; value: VatRate }[] = [
   { label: '16%', value: 0.16 },
   { label: '8%',  value: 0.08 },
