@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import toast from 'react-hot-toast'
 import type { Quote, QuoteForm, Staff, PriceListEntry, QuoteStatus, VatRate, PumpConfig, TransportConfig, BankAccount } from '@/types'
-import { VAT_RATE_OPTIONS, DEFAULT_PUMP_CONFIG, DEFAULT_TRANSPORT_CONFIG, LOCKED_STATUSES } from '@/types'
+import { VAT_RATE_OPTIONS, DEFAULT_PUMP_CONFIG, DEFAULT_TRANSPORT_CONFIG, LOCKED_STATUSES, STATUS_LABELS } from '@/types'
 import { calcTotals, formatKES } from '@/lib/calculations'
 import { updateQuoteStatus, fetchPricingConfig, parsePricingConfig, fetchBankAccounts } from '@/lib/supabase'
 import StageBar from './StageBar'
 import LineItemsTable from './LineItemsTable'
+import { shareQuoteToWhatsApp, preloadShare } from '@/lib/share'
 
 const PDFDownloadButton = dynamic(() => import('./PDFDownloadButton'), { ssr: false })
 
@@ -56,6 +57,8 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
   const [pumpCfg,      setPumpCfg]      = useState<PumpConfig>(DEFAULT_PUMP_CONFIG)
   const [transCfg,     setTransCfg]     = useState<TransportConfig>(DEFAULT_TRANSPORT_CONFIG)
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const [shareOpen,    setShareOpen]    = useState(false)
+  const [sharing,      setSharing]      = useState(false)
 
   const isLocked = LOCKED_STATUSES.includes(status)
 
@@ -67,6 +70,17 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
       setTransCfg(transport)
     })
     fetchBankAccounts().then(setBankAccounts)
+    preloadShare() // warm the PDF modules so the first download/share is instant
+  }, [])
+
+  // Freshly-created quotes redirect here with ?share=1 — auto-open the share prompt.
+  useEffect(() => {
+    if (isNew) return
+    if (new URLSearchParams(window.location.search).get('share') === '1') {
+      setShareOpen(true)
+      window.history.replaceState({}, '', `/quotes/${quote.id}`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const totals = calcTotals(form.line_items, form.vat_rate)
@@ -92,10 +106,46 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
       await onSave(form)
       setDirty(false)
       toast.success('Quote saved')
+      if (!isNew) setShareOpen(true)   // offer to send to WhatsApp
     } catch {
       toast.error('Failed to save quote')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const shareFileName = () =>
+    `${(quote.client_name || 'Quote').replace(/[\/\\:*?"<>|]/g, '-').trim()} - ${quote.pi_number.replace(/\//g, '-')}.pdf`
+
+  const shareMessage = () =>
+    `*Rhombus Concrete*\n${status === 'invoiced' ? 'Invoice' : 'Quotation'} ${quote.pi_number}\n` +
+    `Client: ${quote.client_name}\nSite: ${quote.site}\nTotal: ${formatKES(totals.grand_total)}`
+
+  async function runShare() {
+    setSharing(true)
+    try {
+      const viewUrl = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/quotes/${quote.id}/view`
+      const res = await shareQuoteToWhatsApp({
+        quote:    { ...quote, ...totals, line_items: form.line_items as any, bank_account: selectedBank ?? null },
+        fileName: shareFileName(),
+        message:  shareMessage(),
+        viewUrl,
+      })
+      // First share moves the quote Draft → Quotation sent.
+      if (status === 'draft') {
+        const ok = await updateQuoteStatus(quote.id, 'sent')
+        if (ok) setStatus('sent')
+      }
+      toast.success(res.method === 'file' ? 'Shared to WhatsApp' : 'PDF downloaded — attach it in WhatsApp')
+      setShareOpen(false)
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setShareOpen(false)   // user dismissed the share sheet — leave status unchanged
+      } else {
+        toast.error('Could not share to WhatsApp')
+      }
+    } finally {
+      setSharing(false)
     }
   }
 
@@ -133,7 +183,7 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
     <div className="space-y-5">
 
       {/* Top bar */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">
             {isNew ? 'New quotation' : quote.pi_number}
@@ -155,8 +205,14 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
               <button onClick={copyLink} className="btn">🔗 Copy link</button>
               <PDFDownloadButton
                 quote={{ ...quote, ...totals, line_items: form.line_items as any, bank_account: selectedBank ?? null }}
-                fileName={`${quote.pi_number.replace(/\//g, '-')}.pdf`}
+                fileName={shareFileName()}
               />
+              <button
+                onClick={() => { if (dirty) { toast.error('Save your changes first'); return } setShareOpen(true) }}
+                className="btn bg-[#25D366] text-white border-transparent hover:bg-[#1da851]"
+              >
+                📤 WhatsApp
+              </button>
             </>
           )}
           {!isLocked && (
@@ -176,7 +232,7 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
       {/* Quote details */}
       <div className="card">
         <h2 className="section-title">Quote details</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Quoted by</label>
             <select value={form.quoted_by_id} disabled={isLocked}
@@ -231,7 +287,7 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
       </div>
 
       {/* Notes + Summary */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div className="card">
           <h2 className="section-title">Notes</h2>
           <textarea
@@ -315,6 +371,36 @@ export default function QuoteEditor({ quote, staff, priceList, isNew, onSave }: 
           <p className="text-sm text-gray-400">Select a bank account above to show payment details on the PDF.</p>
         )}
       </div>
+
+      {/* WhatsApp share prompt */}
+      {shareOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !sharing && setShareOpen(false)}
+        >
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900">Send to WhatsApp?</h3>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              {status === 'draft'
+                ? <>This shares the quote PDF to WhatsApp and moves it from <strong>Draft</strong> to <strong>Quotation sent</strong>.</>
+                : <>This shares the updated quote PDF to WhatsApp. Status stays <strong>{STATUS_LABELS[status]}</strong>.</>}
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              On a phone the PDF attaches straight into WhatsApp. On a laptop it downloads the PDF and opens WhatsApp with a link — just attach the file.
+            </p>
+            <div className="flex justify-end gap-2 mt-6">
+              <button className="btn" disabled={sharing} onClick={() => setShareOpen(false)}>Not now</button>
+              <button
+                className="btn text-white border-transparent bg-[#25D366] hover:bg-[#1da851] disabled:opacity-60"
+                disabled={sharing}
+                onClick={runShare}
+              >
+                {sharing ? 'Preparing…' : '📤 Share to WhatsApp'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

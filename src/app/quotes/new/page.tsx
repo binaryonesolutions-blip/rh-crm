@@ -45,7 +45,7 @@ export default function NewQuotePage() {
   async function handleSave(form: QuoteForm) {
     const id = await createQuote(form)
     if (!id) throw new Error('Create failed')
-    router.push(`/quotes/${id}`)
+    router.push(`/quotes/${id}?share=1`)
   }
 
   return (
