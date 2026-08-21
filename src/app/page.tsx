@@ -68,7 +68,7 @@ export default function DashboardPage() {
 
       {/* Filters + search */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4 sm:items-center">
-        <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 overflow-x-auto">
+        <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 overflow-x-auto sm:overflow-x-visible">
           {STATUS_FILTERS.map(f => (
             <button key={f.value}
               onClick={() => setFilter(f.value)}
@@ -81,13 +81,14 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
-        <input
-          type="text"
-          placeholder="Search client, PI number, site…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full sm:w-72"
-        />
+        <div className="w-full sm:w-72 sm:ml-auto">
+          <input
+            type="text"
+            placeholder="Search client, PI number, site…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Table */}
