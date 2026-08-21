@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import toast from 'react-hot-toast'
 import type { Quote, QuoteForm, Staff, PriceListEntry, QuoteStatus, VatRate, PumpConfig, TransportConfig, BankAccount } from '@/types'
-import { VAT_RATE_OPTIONS, DEFAULT_PUMP_CONFIG, DEFAULT_TRANSPORT_CONFIG, LOCKED_STATUSES, STATUS_LABELS } from '@/types'
+import { VAT_RATE_OPTIONS, DEFAULT_PUMP_CONFIG, DEFAULT_TRANSPORT_CONFIG, LOCKED_STATUSES, STATUS_LABELS, DEFAULT_TERMS } from '@/types'
 import { calcTotals, formatKES } from '@/lib/calculations'
 import { updateQuoteStatus, fetchPricingConfig, parsePricingConfig, fetchBankAccounts } from '@/lib/supabase'
 import StageBar from './StageBar'
@@ -33,7 +33,7 @@ function quoteToForm(q: Quote): QuoteForm {
     sap_quote_no:         q.sap_quote_no         || '',
     sap_so_no:            q.sap_so_no            || '',
     odoo_opportunity_ref: q.odoo_opportunity_ref || '',
-    notes:                q.notes                || '',
+    notes:                q.notes                || DEFAULT_TERMS,
     vat_rate:             (q.vat_rate as VatRate) ?? 0.16,
     bank_account_id:      (q as any).bank_account_id || '',
     line_items: (q.line_items || []).map(l => ({
