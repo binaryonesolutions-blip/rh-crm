@@ -44,6 +44,7 @@ function NumInput({
   return (
     <input
       type="number"
+      inputMode="decimal"
       min={min}
       step={step}
       disabled={disabled}
@@ -144,6 +145,10 @@ const TYPE_STYLES: Record<string, string> = {
   other:     'bg-gray-100 text-gray-600',
 }
 
+const cap = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+
+const fieldLabel = 'block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'
+
 export default function LineItemsTable({ items, priceList, vatRate, pumpConfig, transportConfig, locked, onChange }: Props) {
 
   function update(updated: LineItemForm[]) { onChange(updated) }
@@ -194,9 +199,113 @@ export default function LineItemsTable({ items, priceList, vatRate, pumpConfig, 
   const mobFee          = getPumpMobFee(totalConcreteM3, pumpConfig)
   const pumpLines       = items.filter(i => i.item_type === 'pump')
 
+  // ── Per-field controls, reused by both the desktop table and the mobile cards.
+  //    These are plain JSX-returning functions (not components) so inputs keep focus.
+  function fieldType(item: LineItemForm) {
+    const isMob = item.item_type === 'pump_mob'
+    if (locked || isMob) {
+      return (
+        <span className={`text-xs font-semibold px-2 py-1 rounded-md ${TYPE_STYLES[item.item_type]}`}>
+          {isMob ? 'Mob fee' : cap(item.item_type)}
+        </span>
+      )
+    }
+    return (
+      <select value={item.item_type} onChange={e => changeType(item.id, e.target.value as any)}
+        className={`text-xs font-semibold border-0 rounded-md px-2 py-1.5 cursor-pointer ${TYPE_STYLES[item.item_type]}`}
+        style={{ appearance: 'auto' }}>
+        <option value="concrete">Concrete</option>
+        <option value="transport">Transport</option>
+        <option value="pump">Pump</option>
+        <option value="other">Other</option>
+      </select>
+    )
+  }
+
+  function fieldQty(item: LineItemForm) {
+    const isMob   = item.item_type === 'pump_mob'
+    const isPump  = item.item_type === 'pump'
+    const isTrans = item.item_type === 'transport'
+    if (isMob || isPump || isTrans) {
+      return <span className="text-sm text-gray-500">{isMob ? item.qty : totalConcreteM3}</span>
+    }
+    return (
+      <NumInput value={item.qty} step={0.5} disabled={locked} className="w-full text-right"
+        onChange={v => updateField(item.id, 'qty', v)} />
+    )
+  }
+
+  function fieldDesc(item: LineItemForm) {
+    const isConcrete = item.item_type === 'concrete'
+    const isTrans    = item.item_type === 'transport'
+    const isPump     = item.item_type === 'pump'
+    const isMob      = item.item_type === 'pump_mob'
+    if (isConcrete) {
+      return <GradeSearch priceList={priceList} value={item.description}
+        onSelect={e => handleGradeSelect(item.id, e)} disabled={locked} />
+    }
+    if (isTrans) {
+      return (
+        <div className="flex flex-col gap-1">
+          <input type="text" value={item.description} disabled={locked}
+            onChange={e => updateField(item.id, 'description', e.target.value)}
+            className="text-sm" placeholder="Transport" />
+          {!locked && (
+            <div className="flex items-center gap-1.5">
+              <NumInput value={item.distance_km} step={1} disabled={locked}
+                className="w-16 text-right text-sm" placeholder="0"
+                onChange={v => updateField(item.id, 'distance_km', v)} />
+              <span className="text-xs text-gray-400">
+                km return trip → KSH {calcTransportUnitPrice(item.distance_km, transportConfig).toLocaleString('en-KE')}/m³
+              </span>
+            </div>
+          )}
+          {locked && item.distance_km > 0 && (
+            <span className="text-xs text-gray-400">{item.distance_km} km return trip</span>
+          )}
+        </div>
+      )
+    }
+    if (isPump || isMob) return <span className="text-sm text-gray-700">{item.description}</span>
+    return (
+      <input type="text" value={item.description} disabled={locked}
+        onChange={e => updateField(item.id, 'description', e.target.value)}
+        className="w-full" placeholder="Description…" />
+    )
+  }
+
+  function fieldRate(item: LineItemForm) {
+    const isTrans    = item.item_type === 'transport'
+    const isMob      = item.item_type === 'pump_mob'
+    const isConcrete = item.item_type === 'concrete'
+    const isPump     = item.item_type === 'pump'
+    if (isTrans || isMob) {
+      return <span className="block text-right font-mono text-sm text-gray-500 tabular-nums">{formatNum(item.unit_price)}</span>
+    }
+    return (
+      <div className="flex flex-col items-end gap-0.5">
+        <NumInput value={item.unit_price} step={1} disabled={locked} className="w-full text-right"
+          onChange={v => updateField(item.id, 'unit_price', v)} />
+        {isConcrete && (() => {
+          const listPrice = priceList.find(e =>
+            `Supply for Concrete Class ${e.grade.replace('C','')}` === item.description
+          )?.unit_price_kes
+          if (listPrice && item.unit_price !== listPrice) {
+            return <span className="text-xs text-amber-600">List: {listPrice.toLocaleString('en-KE')}</span>
+          }
+          return null
+        })()}
+        {isPump && item.unit_price !== pumpConfig.pump_rate_per_m3 && (
+          <span className="text-xs text-amber-600">List: {pumpConfig.pump_rate_per_m3.toLocaleString('en-KE')}</span>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div className="overflow-x-auto">
+      {/* Desktop / tablet: table */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
@@ -211,148 +320,23 @@ export default function LineItemsTable({ items, priceList, vatRate, pumpConfig, 
           </thead>
           <tbody className="divide-y divide-gray-100">
             {items.map((item) => {
-              const isPump     = item.item_type === 'pump'
-              const isMob      = item.item_type === 'pump_mob'
-              const isTrans    = item.item_type === 'transport'
-              const isConcrete = item.item_type === 'concrete'
-              // Transport and pump use totalConcreteM3 as effective qty
-              const effectiveQty = (isTrans || isPump) ? totalConcreteM3 : item.qty
-              const lineTotal    = calcLineTotal({ qty: effectiveQty, unit_price: item.unit_price })
-
+              const isMob     = item.item_type === 'pump_mob'
+              const isPump    = item.item_type === 'pump'
+              const isTrans   = item.item_type === 'transport'
+              const effQty    = (isTrans || isPump) ? totalConcreteM3 : item.qty
+              const lineTotal = calcLineTotal({ qty: effQty, unit_price: item.unit_price })
               return (
                 <tr key={item.id} className="hover:bg-blue-50/20 group transition-colors align-top">
-
-                  {/* Type — pump_mob always read-only badge */}
-                  <td className="px-2 py-2">
-                    {(locked || isMob) ? (
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-md ${TYPE_STYLES[item.item_type]}`}>
-                        {isMob ? 'Mob fee' : item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1)}
-                      </span>
-                    ) : (
-                      <select value={item.item_type} onChange={e => changeType(item.id, e.target.value as any)}
-                        className={`text-xs font-semibold border-0 rounded-md px-2 py-1.5 cursor-pointer ${TYPE_STYLES[item.item_type]}`}
-                        style={{ appearance: 'auto' }}>
-                        <option value="concrete">Concrete</option>
-                        <option value="transport">Transport</option>
-                        <option value="pump">Pump</option>
-                        <option value="other">Other</option>
-                      </select>
-                    )}
-                  </td>
-
-                  {/* Qty — read-only for pump, mob, transport (all auto-set to concrete volume) */}
-                  <td className="px-2 py-2">
-                    {(isMob || isPump || isTrans) ? (
-                      <span className="block text-right text-sm text-gray-500 pt-1">
-                        {isMob ? item.qty : totalConcreteM3}
-                      </span>
-                    ) : (
-                      <NumInput
-                        value={item.qty}
-                        step={0.5}
-                        disabled={locked}
-                        className="text-right w-full"
-                        onChange={v => updateField(item.id, 'qty', v)}
-                      />
-                    )}
-                  </td>
-
-                  {/* Unit */}
-                  <td className="px-2 py-2">
-                    <span className="text-xs text-gray-400 pt-2 block">{item.unit}</span>
-                  </td>
-
-                  {/* Description */}
-                  <td className="px-2 py-2">
-                    {isConcrete && (
-                      <GradeSearch priceList={priceList} value={item.description}
-                        onSelect={e => handleGradeSelect(item.id, e)} disabled={locked} />
-                    )}
-                    {isTrans && (
-                      <div className="flex flex-col gap-1">
-                        <input type="text" value={item.description} disabled={locked}
-                          onChange={e => updateField(item.id, 'description', e.target.value)}
-                          className="text-xs" placeholder="Transport" />
-                        {!locked && (
-                          <div className="flex items-center gap-1.5">
-                            <NumInput
-                              value={item.distance_km}
-                              step={1}
-                              disabled={locked}
-                              className="w-16 text-right text-xs"
-                              placeholder="0"
-                              onChange={v => updateField(item.id, 'distance_km', v)}
-                            />
-                            <span className="text-xs text-gray-400">
-                              km return trip → KSH {calcTransportUnitPrice(item.distance_km, transportConfig).toLocaleString('en-KE')}/m³
-                            </span>
-                          </div>
-                        )}
-                        {locked && item.distance_km > 0 && (
-                          <span className="text-xs text-gray-400">{item.distance_km} km return trip</span>
-                        )}
-                      </div>
-                    )}
-                    {(isPump || isMob) && (
-                      <span className="text-sm text-gray-700">{item.description}</span>
-                    )}
-                    {item.item_type === 'other' && (
-                      <input type="text" value={item.description} disabled={locked}
-                        onChange={e => updateField(item.id, 'description', e.target.value)}
-                        className="w-full" placeholder="Description…" />
-                    )}
-                  </td>
-
-                  {/* Unit rate
-                      - Transport / mob fee: read-only plain text (auto-calculated)
-                      - Concrete / pump / other: editable (allows per-quote discount)
-                      - All locked when quote is confirmed/invoiced */}
-                  <td className="px-2 py-2">
-                    {(isTrans || isMob) ? (
-                      <span className="block text-right font-mono text-xs text-gray-500 tabular-nums pt-1.5">
-                        {formatNum(item.unit_price)}
-                      </span>
-                    ) : (
-                      <div className="flex flex-col items-end gap-0.5">
-                        <NumInput
-                          value={item.unit_price}
-                          step={1}
-                          disabled={locked}
-                          className="text-right w-full"
-                          onChange={v => updateField(item.id, 'unit_price', v)}
-                        />
-                        {/* Show list price hint if discounted */}
-                        {isConcrete && (() => {
-                          const listPrice = priceList.find(e =>
-                            `Supply for Concrete Class ${e.grade.replace('C','')}` === item.description
-                          )?.unit_price_kes
-                          if (listPrice && item.unit_price !== listPrice) {
-                            return (
-                              <span className="text-xs text-amber-600">
-                                List: {listPrice.toLocaleString('en-KE')}
-                              </span>
-                            )
-                          }
-                        })()}
-                        {isPump && item.unit_price !== pumpConfig.pump_rate_per_m3 && (
-                          <span className="text-xs text-amber-600">
-                            List: {pumpConfig.pump_rate_per_m3.toLocaleString('en-KE')}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Amount */}
-                  <td className="px-2 py-2 text-right font-semibold font-mono text-xs tabular-nums pt-3">
-                    {formatNum(lineTotal)}
-                  </td>
-
-                  {/* Delete — hidden for mob fee rows */}
+                  <td className="px-2 py-2">{fieldType(item)}</td>
+                  <td className="px-2 py-2 text-right">{fieldQty(item)}</td>
+                  <td className="px-2 py-2"><span className="text-xs text-gray-400 block pt-2">{item.unit}</span></td>
+                  <td className="px-2 py-2">{fieldDesc(item)}</td>
+                  <td className="px-2 py-2">{fieldRate(item)}</td>
+                  <td className="px-2 py-2 text-right font-semibold font-mono text-xs tabular-nums pt-3">{formatNum(lineTotal)}</td>
                   <td className="px-2 py-2 text-center pt-3">
                     {!locked && !isMob && (
                       <button onClick={() => removeLine(item.id)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all text-xl leading-none">
+                        className="opacity-40 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all text-xl leading-none">
                         ×
                       </button>
                     )}
@@ -362,6 +346,60 @@ export default function LineItemsTable({ items, priceList, vatRate, pumpConfig, 
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: one card per line item */}
+      <div className="sm:hidden space-y-3">
+        {items.map((item) => {
+          const isMob     = item.item_type === 'pump_mob'
+          const isPump    = item.item_type === 'pump'
+          const isTrans   = item.item_type === 'transport'
+          const effQty    = (isTrans || isPump) ? totalConcreteM3 : item.qty
+          const lineTotal = calcLineTotal({ qty: effQty, unit_price: item.unit_price })
+          return (
+            <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-3 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                {fieldType(item)}
+                {!locked && !isMob && (
+                  <button onClick={() => removeLine(item.id)}
+                    className="text-xs font-medium text-red-500 px-2 py-1 rounded hover:bg-red-50">
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={fieldLabel}>Qty (m³)</label>
+                  {fieldQty(item)}
+                </div>
+                <div>
+                  <label className={fieldLabel}>Unit</label>
+                  <div className="text-sm text-gray-500 pt-1.5">{item.unit}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className={fieldLabel}>Description</label>
+                {fieldDesc(item)}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 items-start">
+                <div>
+                  <label className={fieldLabel}>Unit rate (KSH)</label>
+                  {fieldRate(item)}
+                </div>
+                <div className="text-right">
+                  <label className={fieldLabel}>Amount (KSH)</label>
+                  <div className="text-base font-semibold font-mono tabular-nums pt-1.5">{formatNum(lineTotal)}</div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        {items.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-4">No line items yet.</p>
+        )}
       </div>
 
       {/* Pump info bar */}
